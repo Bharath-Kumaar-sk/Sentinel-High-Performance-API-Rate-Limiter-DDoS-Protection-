@@ -1,15 +1,12 @@
 package com.sentinel;
 
-import java.time.Instant;
-
-
 public class TokenBucket {
-    private final long maxCapacity; //maximum capcity of bucket
-    private  long currentCapacity; //current capacity of bucket
+    private final double maxCapacity; //maximum capcity of bucket
+    private  double currentCapacity; //current capacity of bucket
     private  long lastRefillTime; //last time a request was made
-    private final long refillRate; //token refill per second
+    private final double refillRate; //token refill per second
     
-    public TokenBucket(long maxCapacity, long currentCapacity, long lastRefillTime, long refillRate) {
+    public TokenBucket(double maxCapacity, double currentCapacity, long lastRefillTime, double refillRate) {
         this.maxCapacity = maxCapacity;
         this.currentCapacity = maxCapacity;
         this.lastRefillTime = lastRefillTime;
@@ -20,11 +17,11 @@ public class TokenBucket {
     public synchronized boolean tryConsume() {
         long requestTime; //current request time.
 
-        requestTime = Instant.now().getEpochSecond(); //get current time.
+        requestTime = System.nanoTime(); //get current time.
         refillBucket(requestTime); //calculate current capacity
 
         lastRefillTime = requestTime;
-        if (currentCapacity > 0) {
+        if (currentCapacity >= 1) {
             currentCapacity--;
             return true;
         }
@@ -33,8 +30,8 @@ public class TokenBucket {
     }
 
     public void refillBucket(long requestTime) {
-        long timeDifference = requestTime - this.lastRefillTime;
-        long tokensToRefill = timeDifference*refillRate; //lazy refill, refill based on rate and time diff between last request and current request
+        long timeDiffNano = requestTime - this.lastRefillTime;
+        double tokensToRefill = (timeDiffNano/ 1e9) * refillRate; //lazy refill, refill based on rate and time diff between last request and current request
     
         if (tokensToRefill + this.currentCapacity > maxCapacity) 
             this.currentCapacity = maxCapacity;
