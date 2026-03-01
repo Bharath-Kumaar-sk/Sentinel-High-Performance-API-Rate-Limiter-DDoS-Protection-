@@ -2,14 +2,20 @@ package com.sentinel;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+@Service
 public class RateLimiterService {
-    private final double MAX_AMOUNT;
-    private final double REFILL_RATE;
+    private final double maxAmount;
+    private final double refillRate;
 
     //use constructor so in the main funcitonality we can specify the max and refill
-    public RateLimiterService(double MAX_AMOUNT, double REFILL_RATE) {
-        this.MAX_AMOUNT = MAX_AMOUNT;
-        this.REFILL_RATE = REFILL_RATE;
+    //@Value is used to automatically inject a value to constructor during bean creation
+    //spring boot usually does null or the default primitave value if constructor has attributes
+    //with @Value we are injecting our own values from application.properties 
+    public RateLimiterService(@Value("${maxAmount.amount}")  double maxAmount, @Value("${currAmount.amount}") double refillRate) {
+        this.maxAmount = maxAmount;
+        this.refillRate = refillRate;
 
     }
 
@@ -17,7 +23,7 @@ public class RateLimiterService {
     private final ConcurrentHashMap<String, TokenBucket> map = new ConcurrentHashMap<>();
 
     public boolean allowRequest(String Ip) {
-        TokenBucket bucket  = map.computeIfAbsent(Ip, k -> new TokenBucket(MAX_AMOUNT, MAX_AMOUNT, System.nanoTime(), REFILL_RATE));
+        TokenBucket bucket  = map.computeIfAbsent(Ip, k -> new TokenBucket(maxAmount, maxAmount, System.nanoTime(), refillRate));
         return bucket.tryConsume();
     }
 }
