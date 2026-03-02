@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class RateLimiterService {
     private final int MAX_STRIKES = 5;
-    private final long BAN_DURATION_MS = 86400000L;
+    private final long BAN_DURATION_MS = 30000L;
 
     private final double maxAmount;
     private final double refillRate;
@@ -40,29 +40,26 @@ public class RateLimiterService {
     private final ConcurrentHashMap<String, TokenBucket> map = new ConcurrentHashMap<>();
 
     public boolean allowRequest(String Ip) {
-        //If the Banned map contains the Ip.
-        //get the object for penalty class. 
-        //if banTime < current time (Ban time is over) -> strikes is 0;
-        //otherwise directly return false;
-        if (IsBanned.containsKey(Ip)) {
-            PenaltyClass penalty = IsBanned.computeIfAbsent(Ip, k -> new PenaltyClass(0, 0));
-            if (penalty.banExpirationTime < System.currentTimeMillis())
-                penalty.strikes = 0;
-            }
-            else {
-                return false;
-            }
-        
-        //only after ensuring that the IP is not blocked we access the token bucket map.
-        //for creating or updating the user.
+        //create new or get the object for that particular IP
+        PenaltyClass penalty = IsBanned.computeIfAbsent(Ip, k -> new PenaltyClass(0, 0));
+        //Ban time > current time -> IP banned
+        if (penalty.banExpirationTime > System.currentTimeMillis())
+            return false;
+
+        //Ban time > 0 but < currentTime (checked earlier) means ban over, reset the countdowns
+        //It just skips the new user since new users are initilized with 0 for ban time
+        else if (penalty.banExpirationTime > 0) {
+            penalty.strikes = 0;
+            penalty.banExpirationTime = 0;
+        }
+        //create or get the object for the IP for consuming the token
         TokenBucket bucket  = map.computeIfAbsent(Ip, k -> new TokenBucket(maxAmount, maxAmount, System.nanoTime(), refillRate));
-        boolean allowReq = bucket.tryConsume(); //get T or F for consumption of token from TokenBucket class
-        //Consumption is denied so increase strikes, if it exceeds the max strikes, Ban it.
-        if (!allowReq) {
-            PenaltyClass penalty = IsBanned.computeIfAbsent(Ip,k -> new PenaltyClass(0, 0));
+        //token cannot be consumed -> rate limit hit. 
+        if (!bucket.tryConsume()) {
             penalty.strikes++;
+            //Ban only if the Stikes > maxStrikes
             if (penalty.strikes >= MAX_STRIKES)
-                penalty.banExpirationTime = BAN_DURATION_MS;
+                penalty.banExpirationTime = System.currentTimeMillis() + BAN_DURATION_MS;
             return false;
         }
         return true;
