@@ -10,16 +10,16 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class RateLimiterInterceptor implements HandlerInterceptor {
 
-    private final RateLimiterService rateLimiterService;
+    private final RateLimiter rateLimiter;
     //constructor injection
-    public RateLimiterInterceptor(RateLimiterService rateLimiterService) {
-        this.rateLimiterService = rateLimiterService;
+    public RateLimiterInterceptor(RateLimiter rateLimiter) {
+        this.rateLimiter = rateLimiter;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String Ip = request.getRemoteAddr();
-        if (!rateLimiterService.allowRequest(Ip)) {
+        if (!rateLimiter.allowRequest(Ip)) {
             response.setStatus(429);
             return false;
         }

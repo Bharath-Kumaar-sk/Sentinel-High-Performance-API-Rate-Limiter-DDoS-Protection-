@@ -3,11 +3,15 @@ package com.sentinel;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 
 @Service
-public class RateLimiterService {
+@ConditionalOnProperty(name="rate-limiter.mode", havingValue="local", matchIfMissing=true)
+//property set in application.properties. Act as switch between Redis distributed and local mode
+//so that Spring boot will exactly know which mode we are using based on application properties.
+public class LocalRateLimiter implements RateLimiter {
     private final int MAX_STRIKES = 5;
     private final long BAN_DURATION_MS = 30000L;
 
@@ -31,7 +35,7 @@ public class RateLimiterService {
     //@Value is used to automatically inject a value to constructor during bean creation
     //spring boot usually does null or the default primitave value if constructor has attributes
     //with @Value we are injecting our own values from application.properties 
-    public RateLimiterService(@Value("${maxAmount.amount}")  double maxAmount, @Value("${currAmount.amount}") double refillRate) {
+    public LocalRateLimiter(@Value("${maxAmount.amount}")  double maxAmount, @Value("${currAmount.amount}") double refillRate) {
         this.maxAmount = maxAmount;
         this.refillRate = refillRate;
     }
@@ -39,6 +43,7 @@ public class RateLimiterService {
     //to make sure we can handle if 2 or more requests come at the same time
     private final ConcurrentHashMap<String, TokenBucket> map = new ConcurrentHashMap<>();
 
+    @Override
     public boolean allowRequest(String Ip) {
         //create new or get the object for that particular IP
         PenaltyClass penalty = IsBanned.computeIfAbsent(Ip, k -> new PenaltyClass(0, 0));
