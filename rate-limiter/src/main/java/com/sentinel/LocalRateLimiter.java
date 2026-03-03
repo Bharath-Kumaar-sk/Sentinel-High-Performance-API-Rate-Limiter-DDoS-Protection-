@@ -33,7 +33,7 @@ public class LocalRateLimiter implements RateLimiter {
 
     //use constructor so in the main funcitonality we can specify the max and refill
     //@Value is used to automatically inject a value to constructor during bean creation
-    //spring boot usually does null or the default primitave value if constructor has attributes
+    //spring boot usually does null or the default primitive value if constructor has attributes
     //with @Value we are injecting our own values from application.properties 
     public LocalRateLimiter(@Value("${maxAmount.amount}")  double maxAmount, @Value("${currAmount.amount}") double refillRate) {
         this.maxAmount = maxAmount;
