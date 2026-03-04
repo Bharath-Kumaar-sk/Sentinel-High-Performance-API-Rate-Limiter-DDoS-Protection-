@@ -18,7 +18,7 @@ public class RedisRateLimiter implements RateLimiter {
     //since it is in configuration we will only Inject the method itself.
     private final double maxAmount;
     private final double refillRate;
-    private final StringRedisTemplate stringRedisTemplate;
+    private final StringRedisTemplate stringRedisTemplate; //standard redis template for string operations
     private final RedisScript<Long> redisScript;
 
     public RedisRateLimiter (
