@@ -16,8 +16,8 @@ public class RedisRateLimiter implements RateLimiter {
     //Mistakes made: using multiple constructor -> use a single constructor, only then spring boot will allow it
     //For redis script unlike normal injection where we get the class and then call the method.
     //since it is in configuration we will only Inject the method itself.
-    private static double maxStrikes = 5;
-    private static long ban_duration = 30L;
+    private  static double maxStrikes = 5;
+    private  static long ban_duration = 30L;
     private final double maxAmount;
     private final double refillRate;
     private final StringRedisTemplate stringRedisTemplate; //standard redis template for string operations

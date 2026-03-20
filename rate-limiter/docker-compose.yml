@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # 1. The Cache / Rate Limiter Database
+  redis:
+    image: redis:latest
+    container_name: sentinel-redis
+    ports:
+      - "6379:6379"
+
+  # 2. Your Spring Boot Application
+  sentinel-app:
+    build: . # Tells Docker to look for the Dockerfile in this directory
+    container_name: sentinel-app
+    ports:
+      - "8080:8080"
+    environment:
+      # This overrides your application.properties! It tells Java to look for Redis on the Docker network.
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - redis # Wait for Redis to start before starting the Java app
+
+  # 3. The Metrics Database
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sentinel-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - sentinel-app
+
+  # 4. The Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sentinel-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
